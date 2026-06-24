@@ -1,15 +1,16 @@
+/// <reference types="node" />
 export const config = { runtime: 'edge' }
 
-const ANTHROPIC_API = 'https://api.anthropic.com/v1/messages'
+const GEMINI_MODEL = 'gemini-2.0-flash'
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 })
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = process.env.GEMINI_API_KEY
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'AI not configured — add ANTHROPIC_API_KEY to Vercel env vars.' }), {
+    return new Response(JSON.stringify({ error: 'AI not configured — add GEMINI_API_KEY to Vercel env vars.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })
@@ -49,24 +50,24 @@ Be creative, emotionally attuned, and adaptive to their style. If they give you 
 
   const system = systemPrompts[body.mode] ?? systemPrompts.music
 
-  const messages = [
-    ...(body.history ?? []),
-    { role: 'user', content: body.prompt },
+  const contents = [
+    ...(body.history ?? []).map((msg) => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }],
+    })),
+    { role: 'user', parts: [{ text: body.prompt }] },
   ]
 
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`
+
   try {
-    const res = await fetch(ANTHROPIC_API, {
+    const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1024,
-        system,
-        messages,
+        system_instruction: { parts: [{ text: system }] },
+        contents,
+        generationConfig: { maxOutputTokens: 1024 },
       }),
     })
 
@@ -76,7 +77,7 @@ Be creative, emotionally attuned, and adaptive to their style. If they give you 
     }
 
     const data = await res.json()
-    const text = data.content?.[0]?.text ?? ''
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     return new Response(JSON.stringify({ text }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
