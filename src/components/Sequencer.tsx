@@ -108,6 +108,10 @@ export default function Sequencer() {
   const [currentStep, setCurrentStep] = useState(-1)
   const [isRecording, setIsRecording] = useState(false)
   const [hasRecording, setHasRecording] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [generating, setGenerating] = useState(false)
+  const [beatName, setBeatName] = useState('')
+  const [aiError, setAiError] = useState('')
 
   const audioCtxRef = useRef<AudioContext | null>(null)
   const schedulerRef = useRef<number | null>(null)
@@ -186,6 +190,52 @@ export default function Sequencer() {
 
   useEffect(() => () => stopScheduler(), [stopScheduler])
 
+  const generateBeat = async () => {
+    if (!aiPrompt.trim() || generating) return
+    setGenerating(true)
+    setAiError('')
+    try {
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'beat', prompt: aiPrompt.trim() }),
+      })
+      const data = await res.json()
+      const raw: string = data.text ?? ''
+
+      // Extract JSON — handle markdown fences or bare JSON
+      let parsed: { bpm?: number; name?: string; pattern?: Record<string, number[]> }
+      try {
+        const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
+        parsed = JSON.parse(fenced ? fenced[1].trim() : raw.match(/\{[\s\S]*\}/)![0])
+      } catch {
+        setAiError("Couldn't read the beat — try rephrasing your idea.")
+        return
+      }
+
+      if (parsed.bpm) setBpm(Math.min(200, Math.max(60, parsed.bpm)))
+      if (parsed.name) setBeatName(parsed.name)
+      if (parsed.pattern) {
+        setTracks(prev => prev.map(t => ({
+          ...t,
+          steps: parsed.pattern![t.id]?.map((v: number) => v === 1) ?? t.steps,
+        })))
+      }
+
+      // Restart playback with new pattern
+      stopScheduler()
+      setPlaying(false)
+      setTimeout(() => {
+        startScheduler()
+        setPlaying(true)
+      }, 60)
+    } catch {
+      setAiError('Something went wrong — check your connection and try again.')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const togglePlay = () => {
     if (playing) {
       stopScheduler()
@@ -246,6 +296,22 @@ export default function Sequencer() {
 
   return (
     <div className="seq-root">
+
+      {/* AI prompt */}
+      <form className="seq-ai-row" onSubmit={(e) => { e.preventDefault(); generateBeat() }}>
+        <input
+          className="seq-ai-input"
+          value={aiPrompt}
+          onChange={e => setAiPrompt(e.target.value)}
+          placeholder='Describe your beat… e.g. "Drake love song" or "upbeat Afrobeats"'
+          disabled={generating}
+        />
+        <button type="submit" className="seq-ai-btn" disabled={!aiPrompt.trim() || generating}>
+          {generating ? '⟳ Creating…' : '✨ Generate'}
+        </button>
+      </form>
+      {beatName && <div className="seq-beat-name">🎵 {beatName}</div>}
+      {aiError && <div className="seq-ai-error">{aiError}</div>}
 
       {/* Transport bar */}
       <div className="seq-transport">

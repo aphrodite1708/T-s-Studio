@@ -676,6 +676,56 @@ input { font-family: inherit; }
 
 .seq-clear-btn:hover { border-color: var(--accent); color: var(--text); }
 
+/* AI prompt bar */
+.seq-ai-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.seq-ai-input {
+  flex: 1;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  color: var(--text);
+  font-size: 0.92rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.seq-ai-input:focus { border-color: var(--accent); }
+.seq-ai-input::placeholder { color: var(--text-dim); }
+.seq-ai-input:disabled { opacity: 0.5; }
+
+.seq-ai-btn {
+  padding: 0.7rem 1.2rem;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent-2);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.seq-ai-btn:hover:not(:disabled) { opacity: 0.88; }
+.seq-ai-btn:disabled { opacity: 0.4; }
+
+.seq-beat-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.seq-ai-error {
+  font-size: 0.82rem;
+  color: #f87171;
+  flex-shrink: 0;
+}
+
 /* Grid */
 .seq-grid-scroll {
   flex: 1;
