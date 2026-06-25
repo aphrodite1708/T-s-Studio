@@ -1,7 +1,7 @@
 /// <reference types="node" />
 export const config = { runtime: 'edge' }
 
-const GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_MODEL = 'gemini-1.5-flash'
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
