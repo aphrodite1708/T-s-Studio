@@ -59,7 +59,7 @@ Help users brainstorm, write, and refine song lyrics. You can:
 Be creative, emotionally attuned, and adaptive to their style. If they give you a genre or artist reference, match that energy and writing style. Always offer at least one version of the lyrics they can use immediately, then offer to adjust.`,
   }
 
-  const system = systemPrompts[body.mode] ?? systemPrompts.music
+  const system = systemPrompts[body.mode] ?? systemPrompts.beat
 
   const contents = [
     ...(body.history ?? []).map((msg) => ({
